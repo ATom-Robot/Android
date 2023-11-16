@@ -3,6 +3,7 @@ package xyz.atombot;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -18,6 +19,8 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import org.opencv.android.OpenCVLoader;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -29,7 +32,11 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-public class MainActivity extends Activity implements View.OnClickListener {
+import xyz.atombot.Youmen.YoumengView;
+import xyz.atombot.fangxiang.FangxiangView;
+
+public class MainActivity extends Activity implements View.OnClickListener,
+        FangxiangView.OnJoystickChangeListener, YoumengView.OnYoumengChangeListener {
 
     private static final String TAG = "MainActivity::";
 
@@ -38,19 +45,58 @@ public class MainActivity extends Activity implements View.OnClickListener {
     private ImageView imageView;
     private EditText ipddress_editer;
 
+    private YoumengView ControlYoumen;
+    private FangxiangView ContolFangxiang;
+
     private final int OPENSTREAM = 1;
+    private Bitmap bitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        findViewById(R.id.stream_btn).setOnClickListener(this);
+        findViewById(R.id.stream_btn).setOnClickListener((View.OnClickListener) this);
         ipddress_editer = findViewById(R.id.ipaddress);
         imageView = findViewById(R.id.img);
+
+        ControlYoumen = findViewById(R.id.Viewyoumeng);
+        ContolFangxiang = findViewById(R.id.Viewfangxiang);
+        ControlYoumen.setOnJoystickChangeListener(this);
+        ContolFangxiang.setOnJoystickChangeListener(this);
 
         handlerThread = new HandlerThread("http");
         handlerThread.start();
         handler = new HttpHandler(handlerThread.getLooper());
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        ControlYoumen.invalidate();
+        ContolFangxiang.invalidate();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        ControlYoumen.invalidate();
+        ContolFangxiang.invalidate();
+    }
+
+    @Override
+    protected void onResume() {
+        if (getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+        super.onResume();
+        init_OPenCV();
+    }
+
+    private void init_OPenCV() {
+        if (!OpenCVLoader.initDebug()) {
+            Toast.makeText(getApplicationContext(), "OPenCV 初始化失败!!", Toast.LENGTH_SHORT).show();
+        }
     }
 
     @SuppressLint("NonConstantResourceId")
@@ -63,6 +109,21 @@ public class MainActivity extends Activity implements View.OnClickListener {
             default:
                 break;
         }
+    }
+
+    @Override
+    public void setOnTouchListener(double xValue, double yValue, boolean temp) {
+
+    }
+
+    @Override
+    public void setOnMovedListener(double xValue, double yValue, boolean temp) {
+
+    }
+
+    @Override
+    public void setOnReleaseListener(double xValue, double yValue, boolean temp) {
+
     }
 
     private class HttpHandler extends Handler {
@@ -132,7 +193,6 @@ public class MainActivity extends Activity implements View.OnClickListener {
                     BufferedReader bufferedReader = new BufferedReader(isr);
 
                     String line;
-                    StringBuffer stringBuffer = new StringBuffer();
                     int len;
                     byte[] buffer;
 
@@ -149,7 +209,7 @@ public class MainActivity extends Activity implements View.OnClickListener {
                             }
 
                             bytesToImageFile(buffer, "0A.jpg");
-                            final Bitmap bitmap = BitmapFactory.decodeFile("sdcard/0A.jpg");
+                            bitmap = BitmapFactory.decodeFile("sdcard/0A.jpg");
                             runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {

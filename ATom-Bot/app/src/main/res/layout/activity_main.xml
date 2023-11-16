@@ -7,25 +7,57 @@
     android:orientation="vertical"
     tools:context=".MainActivity">
 
-    <ImageView
-        android:id="@+id/img"
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="400dp"
-        android:src="@drawable/ic_launcher_foreground"
-        app:layout_constraintTop_toTopOf="parent"
-        tools:layout_editor_absoluteX="43dp" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal">
 
-    <EditText
-        android:id="@+id/ipaddress"
+        <EditText
+            android:id="@+id/ipaddress"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:hint="IP地址(例如:192.168.31.82)"
+            android:textAlignment="center" />
+
+        <Button
+            android:id="@+id/stream_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_toEndOf="@+id/ipaddress"
+            android:layout_weight="1"
+            android:text="打开视频流" />
+    </LinearLayout>
+
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="IP地址(例如:192.168.31.82)" />
+        android:layout_height="0dp"
+        android:layout_weight="6"
+        android:orientation="horizontal">
 
-    <Button
-        android:id="@+id/stream_btn"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toEndOf="@+id/ipaddress"
-        android:text="打开视频流" />
+        <xyz.atombot.Youmen.YoumengView
+            android:id="@+id/Viewyoumeng"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            tools:ignore="NestedWeights" />
+
+        <ImageView
+            android:id="@+id/img"
+            android:layout_width="320dp"
+            android:layout_height="240dp"
+            android:layout_gravity="center_vertical"
+            android:src="@drawable/ic_launcher_foreground" />
+
+        <xyz.atombot.fangxiang.FangxiangView
+            android:id="@+id/Viewfangxiang"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_weight="1"
+            tools:ignore="NestedWeights" />
+    </LinearLayout>
 
 </LinearLayout>

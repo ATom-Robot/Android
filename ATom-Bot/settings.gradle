@@ -1,2 +1,3 @@
 rootProject.name='ATom-Bot'
 include ':app'
+include ':OPenCV'

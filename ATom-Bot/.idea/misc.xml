@@ -8,7 +8,8 @@
   <component name="DesignSurface">
     <option name="filePathToZoomLevelMap">
       <map>
-        <entry key="..\:/workspace_rb/ATom-Bot/Android/ATom-Bot/app/src/main/res/layout/activity_main.xml" value="0.35520833333333335" />
+        <entry key="..\:/workspace_rb/ATom-Bot/Android/ATom-Bot/app/src/main/res/drawable-v24/ic_launcher_foreground.xml" value="0.213" />
+        <entry key="..\:/workspace_rb/ATom-Bot/Android/ATom-Bot/app/src/main/res/layout/activity_main.xml" value="0.22" />
         <entry key="..\:/workspace_rb/Opensource/esp32/MiniRover-Hardware/3.Android/ESP32IPCAM/app/src/main/res/layout/activity_main.xml" value="0.22" />
       </map>
     </option>
