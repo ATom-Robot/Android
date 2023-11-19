@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/darker_gray"
     android:orientation="vertical"
     tools:context=".MainActivity">
 
@@ -18,16 +19,44 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:hint="IP地址(例如:192.168.31.82)"
-            android:textAlignment="center" />
+            android:gravity="center"
+            android:hint="IP地址(192.168.31.82)"
+            android:text="192.168.31.82"
+            android:textAlignment="center"
+            android:textSize="20sp" />
 
         <Button
             android:id="@+id/stream_btn"
             android:layout_width="wrap_content"
-            android:layout_height="match_parent"
+            android:layout_height="wrap_content"
             android:layout_toEndOf="@+id/ipaddress"
             android:layout_weight="1"
-            android:text="打开视频流" />
+            android:background="@drawable/btn_normal"
+            android:gravity="center"
+            android:text="打开视频流"
+            android:textSize="20sp" />
+
+        <EditText
+            android:id="@+id/tcp_addr"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:hint="TCP端口(1234)"
+            android:text="1234"
+            android:textAlignment="center"
+            android:textSize="20sp" />
+
+        <Button
+            android:id="@+id/tcp_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_toEndOf="@+id/ipaddress"
+            android:layout_weight="1"
+            android:background="@drawable/btn_normal"
+            android:gravity="center"
+            android:text="tcp连接"
+            android:textSize="20sp" />
     </LinearLayout>
 
     <LinearLayout
@@ -36,12 +65,12 @@
         android:layout_weight="6"
         android:orientation="horizontal">
 
-        <xyz.atombot.Youmen.YoumengView
-            android:id="@+id/Viewyoumeng"
+        <xyz.atombot.fangxiang.FangxiangView
+            android:id="@+id/Viewfangxiang"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_gravity="center"
-            android:layout_weight="1"
+            android:layout_weight="1.5"
             tools:ignore="NestedWeights" />
 
         <ImageView
@@ -49,15 +78,23 @@
             android:layout_width="320dp"
             android:layout_height="240dp"
             android:layout_gravity="center_vertical"
+            android:layout_weight="0.5"
             android:src="@drawable/ic_launcher_foreground" />
 
-        <xyz.atombot.fangxiang.FangxiangView
-            android:id="@+id/Viewfangxiang"
+        <FrameLayout
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_weight="1"
-            tools:ignore="NestedWeights" />
+            android:layout_height="match_parent"
+            android:layout_weight="1.2">
+
+            <SeekBar
+                android:id="@+id/mSeekBar"
+                style="@style/ArmSeekbarStyle"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:layout_gravity="center"
+                android:progress="30"
+                android:rotation="-90" />
+        </FrameLayout>
     </LinearLayout>
 
 </LinearLayout>

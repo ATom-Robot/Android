@@ -1,0 +1,10 @@
+<resources>
+    <style name="ArmSeekbarStyle">ArmSeekbarStyle>
+        <item name="android:maxHeight">40dp</item>
+        <item name="android:indeterminateOnly">false</item>
+        <item name="android:indeterminateDrawable">@color/colorAccent</item>
+        <item name="android:progressDrawable">@drawable/seekbar_progress_drawable</item>
+        <item name="android:minHeight">10dp</item>
+        <!--        <item name="android:thumb">@drawable/ic_launcher_background</item>-->
+    </style>
+</resources>
