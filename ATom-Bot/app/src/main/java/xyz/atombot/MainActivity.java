@@ -18,6 +18,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.SeekBar;
 import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
@@ -45,28 +46,36 @@ public class MainActivity extends Activity implements View.OnClickListener,
     private Handler http_handler;
     private ImageView imageView;
     private Button stream_btn, tcp_btn;
+    private SeekBar joint_seekbar;
     private EditText ipddress_edit, tcpddress_edit;
     private FangxiangView ContolFangxiang;
 
     private final int OPENSTREAM = 1;
-    private boolean Data_Choice = true;
+    private int seekbar_value = 0;
     private Bitmap bitmap;
 
-    public byte[] Dataframe = {    //数据帧  下列参数值初始值为1000
-            /* Throttle ： 遥控油门
-               Roll     ： 横滚角
-               Pitch    ： 俯仰角
-               Yaw      ： 航向角初始值为*/
-            (byte) 0xAA, (byte) 0xBB, (byte) 0x01, (byte) 0x08, (byte) 0x03,
-            (byte) 0xE8, (byte) 0x05, (byte) 0xDC, (byte) 0x05, (byte) 0xDC,
-            (byte) 0x05, (byte) 0xDC, (byte) 0x0D,
+    public byte[] Dataframe1 = {    //数据帧
+            /* Throttle ： 油门
+               Yaw      ： 航向角*/
+            (byte) 0xAA, (byte) 0xBB,
+            (byte) 0x01, (byte) 0x08,
+            (byte) 0x03, (byte) 0xE8,
+            (byte) 0x04, (byte) 0xF8,
+            (byte) 0x0D,
+    };
+
+    public byte[] Dataframe2 = {    //数据帧
+            /* Joint ： 角度*/
+            (byte) 0xAA, (byte) 0xBC,
+            (byte) 0x01, (byte) 0x08,
+            (byte) 0x0D,
     };
 
     private final Handler tcp_handler = new Handler(Looper.getMainLooper());
     private final TcpClient client = new TcpClient() {
         @Override
         public void onConnect(SocketTransceiver transceiver) {
-            System.out.println("tcp已连接");
+            Toast.makeText(getApplicationContext(), "tcp已连接", Toast.LENGTH_SHORT).show();
         }
 
         @Override
@@ -91,7 +100,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
                     String hexString = hexBuilder.toString().trim();
 
                     // 打印十六进制字符串
-                    System.out.println(hexString);
+//                    System.out.println(hexString);
                 }
             });
         }
@@ -112,13 +121,25 @@ public class MainActivity extends Activity implements View.OnClickListener,
         tcpddress_edit = findViewById(R.id.tcp_addr);
         imageView = findViewById(R.id.img);
         ContolFangxiang = findViewById(R.id.Viewfangxiang);
+        joint_seekbar = findViewById(R.id.mSeekBar);
         ContolFangxiang.setOnJoystickChangeListener(this);
         stream_btn.setOnClickListener(this);
         tcp_btn.setOnClickListener(this);
+        joint_seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
 
         HandlerThread handlerThread = new HandlerThread("http");
         handlerThread.start();
         http_handler = new HttpHandler(handlerThread.getLooper());
+    }
+
+    @Override
+    protected void onResume() {
+        // 设置横屏
+        if (getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+        }
+        super.onResume();
+//        init_OPenCV();
     }
 
     @Override
@@ -137,15 +158,6 @@ public class MainActivity extends Activity implements View.OnClickListener,
     public void onStop() {
         client.disconnect();
         super.onStop();
-    }
-
-    @Override
-    protected void onResume() {
-        if (getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
-        super.onResume();
-//        init_OPenCV();
     }
 
     private void init_OPenCV() {
@@ -168,6 +180,26 @@ public class MainActivity extends Activity implements View.OnClickListener,
                 break;
         }
     }
+
+    private final SeekBar.OnSeekBarChangeListener onSeekBarChangeListener = new SeekBar.OnSeekBarChangeListener() {
+        @Override
+        public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+            seekbar_value = i;
+            Dataframe2[3] = (byte) ((seekbar_value & 0xff00) / 256);  //右移八位，高位在前
+            Dataframe2[4] = (byte) (seekbar_value & 0x00ff);
+            tcp_sendStr(Dataframe2);
+        }
+
+        @Override
+        public void onStartTrackingTouch(SeekBar seekBar) {
+
+        }
+
+        @Override
+        public void onStopTrackingTouch(SeekBar seekBar) {
+
+        }
+    };
 
     /**
      * 设置IP和端口地址,连接或断开
@@ -193,69 +225,51 @@ public class MainActivity extends Activity implements View.OnClickListener,
      *
      * @param send_data
      */
-    private void tcp_sendStr(byte send_data[]) {
+    private void tcp_sendStr(final byte send_data[]) {
         if (!client.isConnected())
             return;
-        try {
-            client.getTransceiver().send(send_data);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 
-    @Override
-    public void setOnTouchListener(double xValue, double yValue, boolean temp) {
-        this.Data_Choice = temp;
-    }
-
-    @Override
-    public void setOnMovedListener(final double xValue, final double yValue, boolean temp) {
-        this.Data_Choice = temp;
         Thread thread = new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
+                    Thread.sleep(50);
+                    client.getTransceiver().send(send_data);
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
-                pack_data(xValue, yValue, false);
-                tcp_sendStr(Dataframe);
             }
         });
         thread.start();
     }
 
     @Override
+    public void setOnTouchListener(double xValue, double yValue, boolean temp) {
+    }
+
+    @Override
+    public void setOnMovedListener(final double xValue, final double yValue, boolean temp) {
+        pack_data(xValue, yValue, false);
+        tcp_sendStr(Dataframe1);
+    }
+
+    @Override
     public void setOnReleaseListener(final double xValue, final double yValue, boolean temp) {
-        this.Data_Choice = temp;
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                pack_data(xValue, yValue, false);
-                tcp_sendStr(Dataframe);
-            }
-        });
-        thread.start();
+        pack_data(xValue, yValue, false);
+        tcp_sendStr(Dataframe1);
     }
 
     @SuppressLint("SetTextI18n")
     private void pack_data(double xValue, double yValue, boolean joystickReleased) {
-        if (Data_Choice) {
-            int Yaw = (int) ((xValue + 1) * 500 + 1000);
-            int GasPeValue = (int) ((yValue + 1) * 500 + 1000);
-            Dataframe[4] = (byte) ((GasPeValue & 0xff00) / 256);//右移八位，高位在前
-            Dataframe[5] = (byte) (GasPeValue & 0x00ff);
-            Dataframe[10] = (byte) ((Yaw & 0xff00) / 256);      //右移八位，高位在前
-            Dataframe[11] = (byte) (Yaw & 0x00ff);
-        } else {
-            int Roll = (int) ((xValue + 1) * 500 + 1000);
-            int Pitch = (int) ((yValue + 1) * 500 + 1000);
-            Dataframe[6] = (byte) ((Roll & 0xff00) / 256); //右移八位，高位在前
-            Dataframe[7] = (byte) (Roll & 0x00ff);
-            Dataframe[8] = (byte) ((Pitch & 0xff00) / 256);//右移八位，高位在前
-            Dataframe[9] = (byte) (Pitch & 0x00ff);
-        }
+        int Yaw = (int) ((xValue + 1) * 100);
+        int Throttle = (int) ((yValue + 1) * 100);
+
+//        System.out.println("Throttle:" + Throttle + "  " + "Yaw:" + Yaw);
+
+        Dataframe1[2] = (byte) ((Throttle & 0xff00) / 256);  //右移八位，高位在前
+        Dataframe1[3] = (byte) (Throttle & 0x00ff);
+        Dataframe1[4] = (byte) ((Yaw & 0xff00) / 256);  //右移八位，高位在前
+        Dataframe1[5] = (byte) (Yaw & 0x00ff);
     }
 
     private class HttpHandler extends Handler {
@@ -277,6 +291,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
                     break;
             }
         }
+
     }
 
     //动态申请权限
