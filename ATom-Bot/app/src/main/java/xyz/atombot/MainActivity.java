@@ -3,6 +3,7 @@ package xyz.atombot;
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -16,7 +17,6 @@ import android.os.Looper;
 import android.os.Message;
 import android.view.View;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Toast;
@@ -33,8 +33,6 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import xyz.atombot.fangxiang.FangxiangView;
 
@@ -42,17 +40,25 @@ public class MainActivity extends Activity implements View.OnClickListener,
         FangxiangView.OnJoystickChangeListener {
 
     private static final String TAG = "MainActivity::";
+    private String robot_ipaddress = "";
+    private String robot_tcpport = "";
+    private boolean stream_flag = false;
+    private boolean connected_flag = false;
 
-    private Handler http_handler;
+    public static Handler http_handler;
     private ImageView imageView;
-    private Button stream_btn, tcp_btn;
     private SeekBar joint_seekbar;
-    private EditText ipddress_edit, tcpddress_edit;
+    private Button setting_btn;
     private FangxiangView ContolFangxiang;
 
-    private final int OPENSTREAM = 1;
     private int seekbar_value = 0;
+
+    private int OPENSTREAM = 1;
+
     private Bitmap bitmap;
+
+    // http 请求体
+    HttpURLConnection httpURLConnection = null;
 
     public byte[] Dataframe1 = {    //数据帧
             /* Throttle ： 油门
@@ -71,61 +77,17 @@ public class MainActivity extends Activity implements View.OnClickListener,
             (byte) 0x0D,
     };
 
-    private final Handler tcp_handler = new Handler(Looper.getMainLooper());
-    private final TcpClient client = new TcpClient() {
-        @Override
-        public void onConnect(SocketTransceiver transceiver) {
-            Toast.makeText(getApplicationContext(), "tcp已连接", Toast.LENGTH_SHORT).show();
-        }
-
-        @Override
-        public void onConnectFailed() {
-            tcp_handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    System.out.println("tcp连接失败");
-                }
-            });
-        }
-
-        @Override
-        public void onReceive(SocketTransceiver transceiver, final byte[] s) {
-            tcp_handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    StringBuilder hexBuilder = new StringBuilder();
-                    for (byte b : s) {
-                        hexBuilder.append(String.format("%02X ", b));
-                    }
-                    String hexString = hexBuilder.toString().trim();
-
-                    // 打印十六进制字符串
-//                    System.out.println(hexString);
-                }
-            });
-        }
-
-        @Override
-        public void onDisconnect(SocketTransceiver transceiver) {
-
-        }
-    };
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        stream_btn = findViewById(R.id.stream_btn);
-        tcp_btn = findViewById(R.id.tcp_btn);
-        ipddress_edit = findViewById(R.id.ipaddress);
-        tcpddress_edit = findViewById(R.id.tcp_addr);
-        imageView = findViewById(R.id.img);
+        imageView = findViewById(R.id.camera_img);
+        setting_btn = findViewById(R.id.setting_btn);
         ContolFangxiang = findViewById(R.id.Viewfangxiang);
         joint_seekbar = findViewById(R.id.mSeekBar);
         ContolFangxiang.setOnJoystickChangeListener(this);
-        stream_btn.setOnClickListener(this);
-        tcp_btn.setOnClickListener(this);
         joint_seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
+        setting_btn.setOnClickListener(this);
 
         HandlerThread handlerThread = new HandlerThread("http");
         handlerThread.start();
@@ -135,17 +97,26 @@ public class MainActivity extends Activity implements View.OnClickListener,
     @Override
     protected void onResume() {
         // 设置横屏
-        if (getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
-        }
+//        if (getRequestedOrientation() != ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+//            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
+//        }
         super.onResume();
-//        init_OPenCV();
     }
 
     @Override
     public void onStart() {
         super.onStart();
         ContolFangxiang.invalidate();
+
+        Bundle bundle = getIntent().getExtras();
+        connected_flag = bundle.getBoolean("connected");
+        stream_flag = bundle.getBoolean("open_stream");
+        robot_ipaddress = bundle.getString("ipaddress");
+        robot_tcpport = bundle.getString("tcp_port");
+        if (stream_flag)
+            http_handler.sendEmptyMessage(OPENSTREAM);
+        // 连接TCP服务器
+        tcp_connect();
     }
 
     @Override
@@ -156,8 +127,19 @@ public class MainActivity extends Activity implements View.OnClickListener,
 
     @Override
     public void onStop() {
-        client.disconnect();
         super.onStop();
+        if (httpURLConnection == null)
+            return;
+        try {
+            if (httpURLConnection.getResponseCode() != -1) {
+                httpURLConnection.disconnect();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        // 关闭连接
+        client.disconnect();
     }
 
     private void init_OPenCV() {
@@ -169,15 +151,11 @@ public class MainActivity extends Activity implements View.OnClickListener,
     @SuppressLint("NonConstantResourceId")
     @Override
     public void onClick(View v) {
-        switch (v.getId()) {
-            case R.id.stream_btn:
-                http_handler.sendEmptyMessage(OPENSTREAM);
-                break;
-            case R.id.tcp_btn:
-                tcp_connect();
-                break;
-            default:
-                break;
+        if (v.getId() == R.id.setting_btn) {
+            Intent intent = new Intent(MainActivity.this, SettingScreen.class);
+            intent.putExtra("open_stream", stream_flag);
+            intent.putExtra("connected", connected_flag);
+            startActivity(intent);
         }
     }
 
@@ -200,48 +178,6 @@ public class MainActivity extends Activity implements View.OnClickListener,
 
         }
     };
-
-    /**
-     * 设置IP和端口地址,连接或断开
-     */
-    private void tcp_connect() {
-        if (client.isConnected()) {
-            // 断开连接
-            client.disconnect();
-        } else {
-            try {
-                String hostIP = ipddress_edit.getText().toString();
-                int port = Integer.parseInt(tcpddress_edit.getText().toString());
-                client.connect(hostIP, port);
-            } catch (NumberFormatException e) {
-                Toast.makeText(this, "端口错误", Toast.LENGTH_SHORT).show();
-                e.printStackTrace();
-            }
-        }
-    }
-
-    /**
-     * 发送数据
-     *
-     * @param send_data
-     */
-    private void tcp_sendStr(final byte send_data[]) {
-        if (!client.isConnected())
-            return;
-
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
-                    Thread.sleep(50);
-                    client.getTransceiver().send(send_data);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        });
-        thread.start();
-    }
 
     @Override
     public void setOnTouchListener(double xValue, double yValue, boolean temp) {
@@ -279,19 +215,14 @@ public class MainActivity extends Activity implements View.OnClickListener,
 
         @Override
         public void handleMessage(Message msg) {
-            switch (msg.what) {
-                case OPENSTREAM:
-                    String text = ipddress_edit.getText().toString();
-                    if (text.length() != 0)
-                        show_video_stream(text);
-                    else
-                        Toast.makeText(getApplicationContext(), "IP 地址不能为空", Toast.LENGTH_SHORT).show();
-                    break;
-                default:
-                    break;
+            if (msg.what == OPENSTREAM) {
+                if (!robot_ipaddress.equals("")) {
+                    show_video_stream(robot_ipaddress);
+                    String downloadUrl = "http://" + robot_ipaddress + "/stream";
+                } else
+                    Toast.makeText(getApplicationContext(), "IP 地址不能为空", Toast.LENGTH_SHORT).show();
             }
         }
-
     }
 
     //动态申请权限
@@ -326,7 +257,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
         try {
             URL url = new URL(downloadUrl);
             try {
-                HttpURLConnection httpURLConnection = (HttpURLConnection) url.openConnection();
+                httpURLConnection = (HttpURLConnection) url.openConnection();
                 httpURLConnection.setRequestMethod("GET");
                 httpURLConnection.setConnectTimeout(1000 * 5);
                 httpURLConnection.setReadTimeout(1000 * 5);
@@ -395,5 +326,91 @@ public class MainActivity extends Activity implements View.OnClickListener,
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    public final Handler tcp_handler = new Handler(Looper.getMainLooper());
+    public final TcpClient client = new TcpClient() {
+        @Override
+        public void onConnect(SocketTransceiver transceiver) {
+            Looper.prepare();
+            Toast.makeText(getApplicationContext(), "tcp已连接", Toast.LENGTH_SHORT).show();
+            Looper.loop();
+        }
+
+        @Override
+        public void onConnectFailed() {
+            tcp_handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    Looper.prepare();
+                    Toast.makeText(getApplicationContext(), "tcp连接失败", Toast.LENGTH_SHORT).show();
+                    Looper.loop();
+                }
+            });
+        }
+
+        @Override
+        public void onReceive(SocketTransceiver transceiver, final byte[] s) {
+            tcp_handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    StringBuilder hexBuilder = new StringBuilder();
+                    for (byte b : s) {
+                        hexBuilder.append(String.format("%02X ", b));
+                    }
+                    String hexString = hexBuilder.toString().trim();
+
+                    // 打印十六进制字符串
+//                    System.out.println(hexString);
+                }
+            });
+        }
+
+        @Override
+        public void onDisconnect(SocketTransceiver transceiver) {
+            Looper.prepare();
+            Looper.loop();
+        }
+    };
+
+    /**
+     * 设置IP和端口地址,连接或断开
+     */
+    public void tcp_connect() {
+        if (client.isConnected()) {
+            // 断开连接
+            client.disconnect();
+        } else {
+            try {
+                int port = Integer.parseInt(robot_tcpport);
+                client.connect(robot_ipaddress, port);
+            } catch (NumberFormatException e) {
+                Toast.makeText(this, "端口错误", Toast.LENGTH_SHORT).show();
+                e.printStackTrace();
+            }
+        }
+    }
+
+    /**
+     * 发送数据
+     *
+     * @param send_data
+     */
+    public void tcp_sendStr(final byte send_data[]) {
+        if (!client.isConnected())
+            return;
+
+        Thread thread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(50);
+                    client.getTransceiver().send(send_data);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
     }
 }
