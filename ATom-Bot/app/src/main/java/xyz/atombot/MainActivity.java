@@ -113,8 +113,10 @@ public class MainActivity extends Activity implements View.OnClickListener,
         stream_flag = bundle.getBoolean("open_stream");
         robot_ipaddress = bundle.getString("ipaddress");
         robot_tcpport = bundle.getString("tcp_port");
-        if (stream_flag)
+        if (stream_flag) {
             http_handler.sendEmptyMessage(OPENSTREAM);
+            stream_flag = false;
+        }
         // 连接TCP服务器
         tcp_connect();
     }
@@ -128,6 +130,9 @@ public class MainActivity extends Activity implements View.OnClickListener,
     @Override
     public void onStop() {
         super.onStop();
+        // 关闭连接
+        client.disconnect();
+
         if (httpURLConnection == null)
             return;
         try {
@@ -137,9 +142,6 @@ public class MainActivity extends Activity implements View.OnClickListener,
         } catch (IOException e) {
             e.printStackTrace();
         }
-
-        // 关闭连接
-        client.disconnect();
     }
 
     private void init_OPenCV() {
@@ -153,7 +155,6 @@ public class MainActivity extends Activity implements View.OnClickListener,
     public void onClick(View v) {
         if (v.getId() == R.id.setting_btn) {
             Intent intent = new Intent(MainActivity.this, SettingScreen.class);
-            intent.putExtra("open_stream", stream_flag);
             intent.putExtra("connected", connected_flag);
             startActivity(intent);
         }
@@ -218,7 +219,6 @@ public class MainActivity extends Activity implements View.OnClickListener,
             if (msg.what == OPENSTREAM) {
                 if (!robot_ipaddress.equals("")) {
                     show_video_stream(robot_ipaddress);
-                    String downloadUrl = "http://" + robot_ipaddress + "/stream";
                 } else
                     Toast.makeText(getApplicationContext(), "IP 地址不能为空", Toast.LENGTH_SHORT).show();
             }
@@ -376,7 +376,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
     /**
      * 设置IP和端口地址,连接或断开
      */
-    public void tcp_connect() {
+    private void tcp_connect() {
         if (client.isConnected()) {
             // 断开连接
             client.disconnect();
@@ -396,7 +396,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
      *
      * @param send_data
      */
-    public void tcp_sendStr(final byte send_data[]) {
+    private void tcp_sendStr(final byte send_data[]) {
         if (!client.isConnected())
             return;
 
