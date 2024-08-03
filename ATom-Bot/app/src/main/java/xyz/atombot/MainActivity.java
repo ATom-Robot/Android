@@ -19,6 +19,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.SeekBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.opencv.android.OpenCVLoader;
@@ -49,12 +50,12 @@ public class MainActivity extends Activity implements View.OnClickListener,
     private ImageView imageView;
     private SeekBar joint_seekbar;
     private Button setting_btn;
+    private TextView throttle_text;
+
     private FangxiangView ContolFangxiang;
 
     private int seekbar_value = 0;
-
     private int OPENSTREAM = 1;
-
     private Bitmap bitmap;
 
     // http 请求体
@@ -67,14 +68,14 @@ public class MainActivity extends Activity implements View.OnClickListener,
             (byte) 0x01, (byte) 0x08,
             (byte) 0x03, (byte) 0xE8,
             (byte) 0x04, (byte) 0xF8,
-            (byte) 0x0D,
+            (byte) 0x0D
     };
 
     public byte[] Dataframe2 = {    //数据帧
             /* Joint ： 角度*/
             (byte) 0xAA, (byte) 0xBC,
             (byte) 0x01, (byte) 0x08,
-            (byte) 0x0D,
+            (byte) 0x0D
     };
 
     @Override
@@ -85,6 +86,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
         setting_btn = findViewById(R.id.setting_btn);
         ContolFangxiang = findViewById(R.id.Viewfangxiang);
         joint_seekbar = findViewById(R.id.mSeekBar);
+        throttle_text = findViewById(R.id.throttle_text);
         ContolFangxiang.setOnJoystickChangeListener(this);
         joint_seekbar.setOnSeekBarChangeListener(onSeekBarChangeListener);
         setting_btn.setOnClickListener(this);
@@ -164,8 +166,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
         @Override
         public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
             seekbar_value = i;
-            Dataframe2[3] = (byte) ((seekbar_value & 0xff00) / 256);  //右移八位，高位在前
-            Dataframe2[4] = (byte) (seekbar_value & 0x00ff);
+            Dataframe2[3] = (byte) (seekbar_value);  //右移八位，高位在前
             tcp_sendStr(Dataframe2);
         }
 
@@ -180,19 +181,28 @@ public class MainActivity extends Activity implements View.OnClickListener,
         }
     };
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void setOnTouchListener(double xValue, double yValue, boolean temp) {
+        pack_data(xValue, yValue, false);
+        throttle_text.setText("x:" + (int) ((xValue + 1) * 100) + "   " + "y:" + (int) ((yValue + 1) * 100));
+//        tcp_sendStr(Dataframe1);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void setOnMovedListener(final double xValue, final double yValue, boolean temp) {
         pack_data(xValue, yValue, false);
+        throttle_text.setText("x:" + (int) ((xValue + 1) * 100) + "   " + "y:" + (int) ((yValue + 1) * 100));
+        // 达到触发条件，执行发送操作
         tcp_sendStr(Dataframe1);
     }
 
+    @SuppressLint("SetTextI18n")
     @Override
     public void setOnReleaseListener(final double xValue, final double yValue, boolean temp) {
         pack_data(xValue, yValue, false);
+        throttle_text.setText("x:" + (int) ((xValue + 1) * 100) + "   " + "y:" + (int) ((yValue + 1) * 100));
         tcp_sendStr(Dataframe1);
     }
 
@@ -205,7 +215,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
 
         Dataframe1[2] = (byte) ((Throttle & 0xff00) / 256);  //右移八位，高位在前
         Dataframe1[3] = (byte) (Throttle & 0x00ff);
-        Dataframe1[4] = (byte) ((Yaw & 0xff00) / 256);  //右移八位，高位在前
+        Dataframe1[4] = (byte) ((-Yaw & 0xff00) / 256);  //右移八位，高位在前
         Dataframe1[5] = (byte) (Yaw & 0x00ff);
     }
 
@@ -404,7 +414,7 @@ public class MainActivity extends Activity implements View.OnClickListener,
             @Override
             public void run() {
                 try {
-                    Thread.sleep(50);
+                    Thread.sleep(400);
                     client.getTransceiver().send(send_data);
                 } catch (Exception e) {
                     e.printStackTrace();

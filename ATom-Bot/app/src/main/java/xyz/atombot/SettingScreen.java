@@ -23,10 +23,12 @@ import java.net.InetAddress;
 
 public class SettingScreen extends Activity implements View.OnClickListener {
     private Button connected_btn, back_btn, reset_btn;
+    private Button prev_btn, next_btn;
     private Switch stream_sw;
     public EditText ipddress_edit, tcp_port_edit;
 
     private boolean connect_flag = false;
+    private boolean setting_flag = false;
 
     SharedPreferences sharedPreferences_switch = null;
     SharedPreferences sharedPreferences_ipdaddress = null;
@@ -49,6 +51,12 @@ public class SettingScreen extends Activity implements View.OnClickListener {
 
         reset_btn = findViewById(R.id.reset_btn);
         reset_btn.setOnClickListener(this);
+
+        prev_btn = findViewById(R.id.set_prev_btn);
+        prev_btn.setOnClickListener(this);
+
+        next_btn = findViewById(R.id.set_next_btn);
+        next_btn.setOnClickListener(this);
 
         ipddress_edit = findViewById(R.id.ipaddress);
         tcp_port_edit = findViewById(R.id.tcp_port);
@@ -134,10 +142,23 @@ public class SettingScreen extends Activity implements View.OnClickListener {
             case R.id.reset_btn:
                 if (!client.isConnected()) {
                     Toast.makeText(getApplicationContext(), "未连接，请先连接设备", Toast.LENGTH_SHORT).show();
+                    break;
                 }
                 Dataframe[2] = (byte) (0x01);
                 tcp_sendStr(Dataframe);
+                setting_flag = true;
+                prev_btn.setVisibility(View.VISIBLE);
+                next_btn.setVisibility(View.VISIBLE);
                 Toast.makeText(getApplicationContext(), "设备重启后将进入初始模式", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.set_prev_btn:
+                Dataframe[2] = (byte) (0x02);
+                tcp_sendStr(Dataframe);
+                break;
+            case R.id.set_next_btn:
+                Dataframe[2] = (byte) (0x03);
+                tcp_sendStr(Dataframe);
+                break;
             default:
                 break;
         }

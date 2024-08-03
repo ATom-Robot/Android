@@ -36,13 +36,61 @@
             android:layout_weight="10"
             android:src="@drawable/ic_launcher_foreground" />
 
+        <TextView
+            android:id="@+id/throttle_text"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="x:0   y:0" />
+
         <xyz.atombot.fangxiang.FangxiangView
             android:id="@+id/Viewfangxiang"
-            android:layout_width="300dp"
+            android:layout_width="250dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_weight="1"
             tools:ignore="NestedWeights" />
+
+        <!--        <RelativeLayout-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="wrap_content"-->
+        <!--            android:layout_weight="1">-->
+
+        <!--            <Button-->
+        <!--                android:id="@+id/up_btn"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_centerHorizontal="true" />-->
+
+        <!--            <Button-->
+        <!--                android:id="@+id/stop_btn"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_below="@id/up_btn"-->
+        <!--                android:layout_centerInParent="true" />-->
+
+        <!--            <Button-->
+        <!--                android:id="@+id/l_btn"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_below="@+id/up_btn"-->
+        <!--                android:layout_centerVertical="true"-->
+        <!--                android:layout_toLeftOf="@+id/stop_btn" />-->
+
+        <!--            <Button-->
+        <!--                android:id="@+id/r_btn"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_below="@id/up_btn"-->
+        <!--                android:layout_centerVertical="true"-->
+        <!--                android:layout_toRightOf="@id/stop_btn" />-->
+
+        <!--            <Button-->
+        <!--                android:id="@+id/down_btn"-->
+        <!--                android:layout_width="wrap_content"-->
+        <!--                android:layout_height="wrap_content"-->
+        <!--                android:layout_below="@+id/stop_btn"-->
+        <!--                android:layout_centerHorizontal="true" />-->
+        <!--        </RelativeLayout>-->
 
         <SeekBar
             android:id="@+id/mSeekBar"
@@ -50,7 +98,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_weight="1"
+            android:layout_weight="2"
             android:progress="0" />
     </LinearLayout>
 
